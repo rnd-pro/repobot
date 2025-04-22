@@ -1,0 +1,28 @@
+# Development and build files
+.git/
+.github/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db
+.eslintrc.json
+.prettierrc
+tsconfig.json
+setup.sh
+prompts.md
+DEVELOPMENT_PLAN.md
+
+# Test files
+tests/
+test-files/
+coverage/
+
+# Environment variables
+.env*
+
+# Docs and examples (keep these in the repo but not in the npm package)
+docs/
+examples/
+
+# Ignore personal/dev config
+repobot.config.local.js 

@@ -15,7 +15,7 @@ Repobot is an NPM package that provides an AI assistant for managing development
 ## Installation
 
 ```bash
-npm install repobot
+npm install @rnd-pro/repobot
 ```
 
 ## Quick Start
@@ -23,7 +23,7 @@ npm install repobot
 1. Configure Repobot in your project:
 
 ```bash
-npx repobot init
+npx @rnd-pro/repobot init
 ```
 
 2. Set up your AI API key and Telegram bot token in the configuration file
@@ -31,7 +31,7 @@ npx repobot init
 3. Run Repobot:
 
 ```bash
-npx repobot run
+npx @rnd-pro/repobot run
 ```
 
 ## Configuration
@@ -82,7 +82,7 @@ Repobot is written in modern JavaScript (ESM) with JSDoc type declarations and T
 Repobot is built with TypeScript support for static code analysis, allowing you to use it in both JavaScript and TypeScript projects:
 
 ```typescript
-import { Repobot } from 'repobot';
+import { Repobot } from '@rnd-pro/repobot';
 
 // Initialize Repobot with configuration
 const repobot = new Repobot({

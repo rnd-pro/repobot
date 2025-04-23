@@ -6,8 +6,9 @@
 import { readFile as fsReadFile, writeFile as fsWriteFile, mkdir } from 'fs/promises';
 import { resolve, dirname, relative } from 'path';
 import { existsSync } from 'fs';
-import { glob } from 'glob';
+import pkg from 'glob';
 import ignore from 'ignore';
+const { glob } = pkg;
 
 /**
  * @typedef {import('../index.js').TodoInfo} TodoInfo

@@ -1,5 +1,5 @@
 {
-  "name": "repobot",
+  "name": "@rnd-pro/repobot",
   "version": "0.1.0",
   "description": "AI assistant for managing development processes in Git repositories",
   "type": "module",
@@ -11,6 +11,9 @@
     "start": "node src/cli/index.js",
     "test": "node --test tests/",
     "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "ai",
@@ -30,7 +33,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/RND-PRO/repobot.git"
+    "url": "git+https://github.com/RND-PRO/repobot.git"
   },
   "bugs": {
     "url": "https://github.com/RND-PRO/repobot/issues"

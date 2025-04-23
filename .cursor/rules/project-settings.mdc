@@ -3,9 +3,16 @@ description:
 globs: 
 alwaysApply: true
 ---
+# Project Settings Rules
+
+## Package Management
 - Prefer native git hooks over the husky usage
 - Disable `package-lock.json` for projects, because it conflicts with modern dependency sharing approach based on `importmaps`, HTTPS imports and CDN code parts delivery for common packages
+
+## Code Quality Tools
 - Do not use `eslint`
 - Do not use `prettier`
+
+## Testing
 - Do not use `jest` for testing
 - Prefer to use native built-in Node.js testing packages

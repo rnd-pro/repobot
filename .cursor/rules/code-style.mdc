@@ -3,13 +3,17 @@ description:
 globs: 
 alwaysApply: true
 ---
-- Always use modern JavaScript
+# Code Style Rules
+
+## Modern JavaScript
+- Always use modern JavaScript:
   - Avoid to use `require`, always use modern ESM imports instead
   - Use modern Node.js APIs (`fetch`, HTTPS module imports, top level await, etc)
-  - Use moderm browser APIs and specs, such as:
+  - Use modern browser APIs and specs, such as:
     - Custom Elements
     - importmaps
 
+## Code Style Settings
 - Use following code style settings:
   - Single quotes
   - Use semicolons
@@ -17,5 +21,6 @@ alwaysApply: true
   - New lines for key/value pairs in objects
   - New lines for array items
 
+## Code Cleanliness
 - Avoid to leave unused imports 
-- Avoid to leave unused entity defenitions
+- Avoid to leave unused entity definitions

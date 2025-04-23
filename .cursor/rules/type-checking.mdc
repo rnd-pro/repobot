@@ -3,13 +3,20 @@ description:
 globs: 
 alwaysApply: true
 ---
-Use TypeScript type declarations in JSdoc format in JavaScript files as a major approach:
+# Type Checking Rules
+
+## General Approach
+Use TypeScript type declarations in JSdoc format in JavaScript files as a major approach.
+
+## Type Declaration Rules
 - Use TS-specific (non JSDoc) syntax only in `*.d.ts` files
 - Use `"allowJs": true, "noEmit": true` for type checks in `tsconfig.json`
-- Do not use TS-specific primitives, use the JavaScript runtime types (`String`, `Boolean`, `Number` instead of `string`, `boolean`, `number`) in type defenitions everywhere it's possible
-- Always create detalized Object declarations `Object<string: String>` instead of just `Object` or `any`
+- Do not use TS-specific primitives, use the JavaScript runtime types (`String`, `Boolean`, `Number` instead of `string`, `boolean`, `number`) in type definitions everywhere it's possible
+- Always create detailed Object declarations `Object<string: String>` instead of just `Object` or `any`
+
+## Type Organization
 - Declare complex types in separate `*.d.ts` files
 - Use standard TS utility types such as `Partial<>` or `Record<>` or etc. when needed
 - For the more complex structures and cases, use `@typedef` statements or external `*.d.ts` declaration files
 - Use `*.d.ts` files for global project types, and use proper namespaces for globals
-- Do not create type defenitions for external libraries
+- Do not create type definitions for external libraries

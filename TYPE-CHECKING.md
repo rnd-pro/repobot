@@ -33,6 +33,12 @@ Using JavaScript with JSDoc type annotations instead of pure TypeScript offers s
    - No transpilation needed for either case
    - Seamless integration with both ecosystems
    - Perfect for creating shared libraries and modules
+8. **Testing Simplicity** - Pure JavaScript approach simplifies testing:
+   - Direct use of native Node.js test runner
+   - No need for TypeScript-specific test configuration
+   - Faster test execution without compilation
+   - Easier mocking and test setup
+   - Straightforward integration testing
 
 ## Core Principles
 

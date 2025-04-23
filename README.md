@@ -41,9 +41,9 @@ Repobot can be configured through a `repobot.config.js` file in your project roo
 ```javascript
 export default {
   ai: {
-    provider: 'openai', // or other supported providers
     apiKey: process.env.AI_API_KEY,
     model: 'gpt-4', // or other models
+    endpoint: 'https://api.openai.com/v1/chat/completions', // or other AI provider endpoints
   },
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN,
@@ -87,8 +87,8 @@ import { Repobot } from 'repobot';
 // Initialize Repobot with configuration
 const repobot = new Repobot({
   ai: {
-    provider: 'openai',
     apiKey: process.env.AI_API_KEY,
+    endpoint: 'https://api.openai.com/v1/chat/completions',
   },
 });
 

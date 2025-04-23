@@ -21,6 +21,7 @@ declare module 'repobot' {
       provider: string;
       apiKey?: string;
       model?: string;
+      options?: Record<string, any>;
     };
     telegram?: {
       botToken?: string;
@@ -138,6 +139,45 @@ declare module 'repobot' {
     getTodoInfo(): Promise<TodoInfo[]>;
     getDocumentationInfo(): Promise<DocumentationInfo[]>;
     updateTodoStatus(filePath: string, taskDescription: string, completed: boolean): Promise<boolean>;
+  }
+
+  /**
+   * AI Message interface
+   */
+  export interface AIMessage {
+    role: string;
+    content: string;
+  }
+
+  /**
+   * AI Request Options interface
+   */
+  export interface AIRequestOptions {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  }
+
+  /**
+   * Base AI Provider interface
+   */
+  export interface BaseAIProvider {
+    processMessages(messages: AIMessage[], options?: AIRequestOptions): Promise<string>;
+    validateConfig(): boolean;
+  }
+
+  /**
+   * OpenAI Provider interface
+   */
+  export interface OpenAIProvider extends BaseAIProvider {
+    endpoint: string;
+  }
+
+  /**
+   * Provider Factory interface
+   */
+  export interface ProviderFactory {
+    getProvider(config: Config['ai']): BaseAIProvider;
   }
 
   export class AIConnector {

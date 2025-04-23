@@ -3,6 +3,8 @@
  * @module repobot/ai
  */
 
+import { getProvider } from './providers/index.js';
+
 /**
  * @typedef {Object} GitContext
  * @property {String} currentBranch - Current git branch
@@ -70,13 +72,11 @@ export class AIConnector {
    */
   constructor(config) {
     this.config = config;
-    this.provider = this.config.get('ai.provider') || 'openai';
-    this.apiKey = this.config.get('ai.apiKey') || process.env.AI_API_KEY;
-    this.model = this.config.get('ai.model') || 'gpt-4';
-    
-    if (!this.apiKey) {
-      console.warn('No API key provided for AI provider');
-    }
+    this.provider = getProvider({
+      provider: this.config.get('ai.provider') || 'openai',
+      apiKey: this.config.get('ai.apiKey') || process.env.AI_API_KEY,
+      model: this.config.get('ai.model') || 'gpt-4'
+    });
   }
 
   /**
@@ -90,12 +90,17 @@ export class AIConnector {
       // Prepare the prompt
       const prompt = this.buildPrompt(query, context);
       
-      // Process the query based on the provider
-      if (this.provider.toLowerCase() === 'openai') {
-        return await this.processWithOpenAI(prompt);
-      }
-      
-      throw new Error(`Unsupported AI provider: ${this.provider}`);
+      // Process the query with the provider
+      return await this.provider.processMessages([
+        {
+          role: 'system',
+          content: 'You are Repobot, an AI assistant for managing development processes in Git repositories.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]);
     } catch (err) {
       const error = /** @type {Error} */ (err);
       console.error('Failed to process query with AI:', error.message);
@@ -110,14 +115,8 @@ export class AIConnector {
    * @returns {String} - Built prompt
    */
   buildPrompt(query, context) {
-    // Start with a system message
-    let prompt = `You are Repobot, an AI assistant for managing development processes in Git repositories.
-You help with task tracking, detailed work reports, planning, and more.
-
-Current query: ${query}
-
-Context information:
-`;
+    // Start with the query
+    let prompt = `Current query: ${query}\n\nContext information:\n`;
 
     // Add Git information
     if (context.git) {
@@ -152,61 +151,9 @@ Documentation Files:
     }
 
     // Add timestamp
-    prompt += `
-Timestamp: ${context.timestamp || new Date().toISOString()}
-
-Please provide a helpful response to the query.
-`;
+    prompt += `\nTimestamp: ${context.timestamp || new Date().toISOString()}\n`;
 
     return prompt;
-  }
-
-  /**
-   * Process a query with OpenAI
-   * @param {String} prompt - Prompt for OpenAI
-   * @returns {Promise<String>} - OpenAI response
-   */
-  async processWithOpenAI(prompt) {
-    if (!this.apiKey) {
-      throw new Error('OpenAI API key is required');
-    }
-    
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            { 
-              role: 'system',
-              content: 'You are Repobot, an AI assistant for managing development processes in Git repositories.',
-             },
-            { 
-              role: 'user',
-              content: prompt,
-             }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`OpenAI API error: ${errorData.error?.message || response.statusText}`);
-      }
-      
-      const data = await response.json();
-      return data.choices[0].message.content;
-    } catch (err) {
-      const error = /** @type {Error} */ (err);
-      console.error('OpenAI API request failed:', error.message);
-      throw error;
-    }
   }
 
   /**
@@ -220,10 +167,17 @@ Please provide a helpful response to the query.
       // Build the report prompt
       const prompt = this.buildReportPrompt(template, context);
       
-      // Generate the report using the AI
-      const report = await this.processQuery(prompt, context);
-      
-      return report;
+      // Generate the report using the provider
+      return await this.provider.processMessages([
+        {
+          role: 'system',
+          content: 'You are Repobot, an AI assistant for managing development processes in Git repositories.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]);
     } catch (err) {
       const error = /** @type {Error} */ (err);
       console.error('Failed to generate report:', error.message);
@@ -238,10 +192,7 @@ Please provide a helpful response to the query.
    * @returns {String} - Built prompt
    */
   buildReportPrompt(template, context) {
-    let prompt = `You are Repobot, an AI assistant for managing development processes in Git repositories.
-Please generate a ${template} report based on the following information:
-
-`;
+    let prompt = `Please generate a ${template} report based on the following information:\n\n`;
 
     // Add Git information
     if (context.git) {
@@ -317,11 +268,8 @@ Documentation Updates:
     }
 
     // Add timestamp
-    prompt += `
-Timestamp: ${context.timestamp || new Date().toISOString()}
-
-Please generate a comprehensive ${template} report based on this information.
-`;
+    prompt += `\nTimestamp: ${context.timestamp || new Date().toISOString()}\n`;
+    prompt += `\nPlease generate a comprehensive ${template} report based on this information.\n`;
 
     return prompt;
   }

@@ -10,9 +10,8 @@ import { scheduleJob } from 'node-cron';
 
 /**
  * Run Repobot with the current configuration
- * @param {string[]} args - Command arguments
  */
-export async function runCommand(args) {
+export async function runCommand() {
   console.log('Starting Repobot...');
   
   // Check if config file exists
@@ -28,7 +27,8 @@ export async function runCommand(args) {
     const configModule = await import(configPath);
     config = configModule.default;
   } catch (error) {
-    console.error('Failed to load configuration:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Failed to load configuration:', errorMessage);
     process.exit(1);
   }
   
@@ -41,7 +41,8 @@ export async function runCommand(args) {
       process.exit(1);
     }
   } catch (error) {
-    console.error('Error initializing Repobot:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error initializing Repobot:', errorMessage);
     process.exit(1);
   }
   
@@ -55,7 +56,8 @@ export async function runCommand(args) {
         await repobot.sendReport(report);
         console.log('Report sent successfully');
       } catch (error) {
-        console.error('Failed to generate or send scheduled report:', error.message);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error('Failed to generate or send scheduled report:', errorMessage);
       }
     });
   }
@@ -66,7 +68,8 @@ export async function runCommand(args) {
       await repobot.telegram.start();
       console.log('Telegram bot started');
     } catch (error) {
-      console.error('Failed to start Telegram bot:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Failed to start Telegram bot:', errorMessage);
     }
   }
   

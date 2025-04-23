@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 /**
  * Configuration schema for validation
+ * @type {z.ZodSchema}
  */
 const ConfigSchema = z.object({
   ai: z.object({
@@ -34,6 +35,10 @@ const ConfigSchema = z.object({
 });
 
 /**
+ * @typedef {z.infer<typeof ConfigSchema>} Config
+ */
+
+/**
  * Manage Repobot configuration
  * @param {string[]} args - Command arguments
  */
@@ -54,29 +59,32 @@ export async function configCommand(args) {
     return;
   }
   
-  switch (action) {
-    case 'get':
-      if (params.length === 0) {
-        showConfig();
-      } else {
-        getConfigValue(params[0]);
-      }
-      break;
-    case 'set':
-      if (params.length < 2) {
-        console.error('Usage: repobot config set <key> <value>');
-        process.exit(1);
-      }
-      setConfigValue(params[0], params.slice(1).join(' '));
-      break;
-    case 'validate':
-      validateConfig();
-      break;
-    default:
-      console.error(`Unknown action: ${action}`);
-      console.log('Available actions: get, set, validate');
-      process.exit(1);
+  if (action === 'get') {
+    if (params.length === 0) {
+      showConfig();
+    } else {
+      getConfigValue(params[0]);
+    }
+    return;
   }
+
+  if (action === 'set') {
+    if (params.length < 2) {
+      console.error('Usage: repobot config set <key> <value>');
+      process.exit(1);
+    }
+    setConfigValue(params[0], params.slice(1).join(' '));
+    return;
+  }
+
+  if (action === 'validate') {
+    validateConfig();
+    return;
+  }
+
+  console.error(`Unknown action: ${action}`);
+  console.log('Available actions: get, set, validate');
+  process.exit(1);
 }
 
 /**
@@ -105,13 +113,15 @@ function getConfigValue(key) {
   }
   
   // Parse the config object
+  /** @type {Config} */
   let config;
   try {
     // Use Function constructor to evaluate the object literal
     const configStr = configMatch[1];
     const configFn = new Function(`return ${configStr}`);
     config = configFn();
-  } catch (error) {
+  } catch (err) {
+    const error = /** @type {Error} */ (err);
     console.error('Failed to parse configuration:', error.message);
     process.exit(1);
   }
@@ -147,19 +157,22 @@ function setConfigValue(key, value) {
   }
   
   // Parse the config object
+  /** @type {Record<string, any>} */
   let config;
   try {
     // Use Function constructor to evaluate the object literal
     const configStr = configMatch[1];
     const configFn = new Function(`return ${configStr}`);
     config = configFn();
-  } catch (error) {
+  } catch (err) {
+    const error = /** @type {Error} */ (err);
     console.error('Failed to parse configuration:', error.message);
     process.exit(1);
   }
   
   // Set the value using dot notation
   const keys = key.split('.');
+  /** @type {Record<string, any>} */
   let current = config;
   for (let i = 0; i < keys.length - 1; i++) {
     const k = keys[i];
@@ -170,23 +183,24 @@ function setConfigValue(key, value) {
   }
   
   // Parse the value based on its format
+  /** @type {any} */
   let parsedValue = value;
   if (value === 'true') {
     parsedValue = true;
   } else if (value === 'false') {
     parsedValue = false;
-  } else if (!isNaN(value)) {
+  } else if (!Number.isNaN(Number(value))) {
     parsedValue = Number(value);
   } else if (value.startsWith('[') && value.endsWith(']')) {
     try {
       parsedValue = JSON.parse(value);
-    } catch (error) {
+    } catch {
       // Keep as string if not valid JSON
     }
   } else if (value.startsWith('{') && value.endsWith('}')) {
     try {
       parsedValue = JSON.parse(value);
-    } catch (error) {
+    } catch {
       // Keep as string if not valid JSON
     }
   }
@@ -215,13 +229,15 @@ function validateConfig() {
   }
   
   // Parse the config object
+  /** @type {Config} */
   let config;
   try {
     // Use Function constructor to evaluate the object literal
     const configStr = configMatch[1];
     const configFn = new Function(`return ${configStr}`);
     config = configFn();
-  } catch (error) {
+  } catch (err) {
+    const error = /** @type {Error} */ (err);
     console.error('Failed to parse configuration:', error.message);
     process.exit(1);
   }
@@ -230,7 +246,8 @@ function validateConfig() {
   try {
     ConfigSchema.parse(config);
     console.log('Configuration is valid');
-  } catch (error) {
+  } catch (err) {
+    const error = /** @type {import('zod').ZodError} */ (err);
     console.error('Configuration validation failed:');
     console.error(error.errors);
     process.exit(1);

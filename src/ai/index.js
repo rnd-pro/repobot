@@ -4,12 +4,69 @@
  */
 
 /**
+ * @typedef {Object} GitContext
+ * @property {String} currentBranch - Current git branch
+ * @property {Array<String>} [modifiedFiles] - List of modified files
+ * @property {Array<String>} [stagedFiles] - List of staged files
+ * @property {Array<String>} [untrackedFiles] - List of untracked files
+ * @property {Array<GitCommit>} [recentCommits] - List of recent commits
+ */
+
+/**
+ * @typedef {Object} GitCommit
+ * @property {String} hash - Commit hash
+ * @property {String} message - Commit message
+ * @property {String} author - Author name
+ * @property {String} date - Commit date
+ */
+
+/**
+ * @typedef {Object} TodoTask
+ * @property {String} description - Task description
+ * @property {Boolean} completed - Task completion status
+ * @property {String} [section] - Task section
+ */
+
+/**
+ * @typedef {Object} TodoInfo
+ * @property {Array<TodoTask>} tasks - List of tasks
+ * @property {Array<String>} [sections] - List of sections
+ */
+
+/**
+ * @typedef {Object} DocumentationSection
+ * @property {String} title - Section title
+ * @property {Number} level - Section level
+ * @property {Array<String>} content - Section content lines
+ */
+
+/**
+ * @typedef {Object} DocumentationInfo
+ * @property {Array<DocumentationSection>} sections - List of sections
+ * @property {String} title - Document title
+ * @property {String} content - Raw document content
+ */
+
+/**
+ * @typedef {Object} RepobotConfig
+ * @property {function(String): *} get - Get configuration value by key
+ */
+
+/**
+ * @typedef {Object} RepobotContext
+ * @property {GitContext} [git] - Git context information
+ * @property {Object<String, TodoInfo>} [todos] - TODO information by file
+ * @property {Object<String, DocumentationInfo>} [documentation] - Documentation information by file
+ * @property {String} [timestamp] - Context timestamp
+ */
+
+/**
  * AI Connector class for Repobot
  */
 export class AIConnector {
   /**
    * Create a new AIConnector instance
-   * @param {Object} config - Repobot configuration
+   * @param {RepobotConfig} config - Repobot configuration
    */
   constructor(config) {
     this.config = config;
@@ -24,9 +81,9 @@ export class AIConnector {
 
   /**
    * Process a query using AI
-   * @param {string} query - User query
-   * @param {Object} context - Context information
-   * @returns {Promise<string>} - AI response
+   * @param {String} query - User query
+   * @param {RepobotContext} context - Context information
+   * @returns {Promise<String>} - AI response
    */
   async processQuery(query, context) {
     try {
@@ -34,13 +91,13 @@ export class AIConnector {
       const prompt = this.buildPrompt(query, context);
       
       // Process the query based on the provider
-      switch (this.provider.toLowerCase()) {
-        case 'openai':
-          return await this.processWithOpenAI(prompt);
-        default:
-          throw new Error(`Unsupported AI provider: ${this.provider}`);
+      if (this.provider.toLowerCase() === 'openai') {
+        return await this.processWithOpenAI(prompt);
       }
-    } catch (error) {
+      
+      throw new Error(`Unsupported AI provider: ${this.provider}`);
+    } catch (err) {
+      const error = /** @type {Error} */ (err);
       console.error('Failed to process query with AI:', error.message);
       throw error;
     }
@@ -48,9 +105,9 @@ export class AIConnector {
 
   /**
    * Build a prompt for the AI
-   * @param {string} query - User query
-   * @param {Object} context - Context information
-   * @returns {string} - Built prompt
+   * @param {String} query - User query
+   * @param {RepobotContext} context - Context information
+   * @returns {String} - Built prompt
    */
   buildPrompt(query, context) {
     // Start with a system message
@@ -80,7 +137,7 @@ Git Repository:
 TODO Files:
 `;
       for (const [file, info] of Object.entries(context.todos)) {
-        prompt += `- ${file}: ${info.tasks?.length || 0} tasks (${info.tasks?.filter(t => t.completed).length || 0} completed)\n`;
+        prompt += `- ${file}: ${info.tasks?.length || 0} tasks (${info.tasks?.filter(/** @param {TodoTask} t */ (t) => t.completed).length || 0} completed)\n`;
       }
     }
 
@@ -106,8 +163,8 @@ Please provide a helpful response to the query.
 
   /**
    * Process a query with OpenAI
-   * @param {string} prompt - Prompt for OpenAI
-   * @returns {Promise<string>} - OpenAI response
+   * @param {String} prompt - Prompt for OpenAI
+   * @returns {Promise<String>} - OpenAI response
    */
   async processWithOpenAI(prompt) {
     if (!this.apiKey) {
@@ -124,8 +181,14 @@ Please provide a helpful response to the query.
         body: JSON.stringify({
           model: this.model,
           messages: [
-            { role: 'system', content: 'You are Repobot, an AI assistant for managing development processes in Git repositories.' },
-            { role: 'user', content: prompt }
+            { 
+              role: 'system',
+              content: 'You are Repobot, an AI assistant for managing development processes in Git repositories.',
+             },
+            { 
+              role: 'user',
+              content: prompt,
+             }
           ],
           temperature: 0.7,
           max_tokens: 1000
@@ -139,7 +202,8 @@ Please provide a helpful response to the query.
       
       const data = await response.json();
       return data.choices[0].message.content;
-    } catch (error) {
+    } catch (err) {
+      const error = /** @type {Error} */ (err);
       console.error('OpenAI API request failed:', error.message);
       throw error;
     }
@@ -147,21 +211,21 @@ Please provide a helpful response to the query.
 
   /**
    * Generate a report using AI
-   * @param {string} template - Report template
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
-   * @returns {Promise<string>} - Generated report
+   * @param {String} template - Report template
+   * @param {RepobotContext} context - Context information
+   * @returns {Promise<String>} - Generated report
    */
-  async generateReport(template, context, options = {}) {
+  async generateReport(template, context) {
     try {
       // Build the report prompt
-      const prompt = this.buildReportPrompt(template, context, options);
+      const prompt = this.buildReportPrompt(template, context);
       
       // Generate the report using the AI
       const report = await this.processQuery(prompt, context);
       
       return report;
-    } catch (error) {
+    } catch (err) {
+      const error = /** @type {Error} */ (err);
       console.error('Failed to generate report:', error.message);
       throw error;
     }
@@ -169,12 +233,11 @@ Please provide a helpful response to the query.
 
   /**
    * Build a prompt for report generation
-   * @param {string} template - Report template
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
-   * @returns {string} - Built prompt
+   * @param {String} template - Report template
+   * @param {RepobotContext} context - Context information
+   * @returns {String} - Built prompt
    */
-  buildReportPrompt(template, context, options) {
+  buildReportPrompt(template, context) {
     let prompt = `You are Repobot, an AI assistant for managing development processes in Git repositories.
 Please generate a ${template} report based on the following information:
 
@@ -194,7 +257,7 @@ Recent Commits:
       
       if (context.git.recentCommits && context.git.recentCommits.length > 0) {
         for (const commit of context.git.recentCommits) {
-          prompt += `- ${commit.hash.substring(0, 7)}: ${commit.message} (${commit.author_name}, ${new Date(commit.date).toLocaleDateString()})\n`;
+          prompt += `- ${commit.hash.substring(0, 7)}: ${commit.message} (${commit.author}, ${new Date(commit.date).toLocaleDateString()})\n`;
         }
       } else {
         prompt += '- No recent commits\n';
@@ -212,8 +275,8 @@ TODO Status:
         
         if (info.sections && info.sections.length > 0) {
           for (const section of info.sections) {
-            const sectionTasks = info.tasks.filter(task => task.section === section);
-            const completedTasks = sectionTasks.filter(task => task.completed);
+            const sectionTasks = info.tasks.filter(/** @param {TodoTask} task */ (task) => task.section === section);
+            const completedTasks = sectionTasks.filter(/** @param {TodoTask} task */ (task) => task.completed);
             
             prompt += `\n${section}:\n`;
             prompt += `- Total tasks: ${sectionTasks.length}\n`;
@@ -229,7 +292,7 @@ TODO Status:
             
             if (sectionTasks.length - completedTasks.length > 0) {
               prompt += `\nPending tasks:\n`;
-              for (const task of sectionTasks.filter(task => !task.completed)) {
+              for (const task of sectionTasks.filter(/** @param {TodoTask} task */ (task) => !task.completed)) {
                 prompt += `- [ ] ${task.description}\n`;
               }
             }

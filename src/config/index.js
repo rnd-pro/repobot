@@ -6,6 +6,26 @@
 import { z } from 'zod';
 
 /**
+ * @typedef {Object} ConfigOptions
+ * @property {Object} [ai] - AI configuration
+ * @property {String} [ai.provider] - AI provider name
+ * @property {String} [ai.apiKey] - AI API key
+ * @property {String} [ai.model] - AI model name
+ * @property {Object} [telegram] - Telegram configuration
+ * @property {String} [telegram.botToken] - Telegram bot token
+ * @property {String} [telegram.chatId] - Telegram chat ID
+ * @property {String} [telegram.groupId] - Telegram group ID
+ * @property {Object} [reporting] - Reporting configuration
+ * @property {String} [reporting.schedule] - Report schedule (cron format)
+ * @property {String} [reporting.template] - Report template name
+ * @property {Object} [repository] - Repository configuration
+ * @property {Object} [repository.paths] - Repository paths
+ * @property {Array<String>} [repository.paths.todos] - Todo file patterns
+ * @property {Array<String>} [repository.paths.documentation] - Documentation file patterns
+ * @property {Object<string, any>} [options] - Additional configuration options
+ */
+
+/**
  * Configuration schema for validation
  */
 const ConfigSchema = z.object({
@@ -29,10 +49,12 @@ const ConfigSchema = z.object({
       documentation: z.array(z.string()).optional(),
     }).optional(),
   }).optional(),
+  options: z.record(z.string(), z.any()).optional(),
 });
 
 /**
  * Default configuration
+ * @type {ConfigOptions}
  */
 const DEFAULT_CONFIG = {
   ai: {
@@ -50,6 +72,7 @@ const DEFAULT_CONFIG = {
       documentation: ['**/*.md'],
     },
   },
+  options: {},
 };
 
 /**
@@ -58,90 +81,73 @@ const DEFAULT_CONFIG = {
 export class Config {
   /**
    * Create a new Config instance
-   * @param {Object} userConfig - User configuration
+   * @param {ConfigOptions} [options={}] - Configuration options
    */
-  constructor(userConfig = {}) {
-    this.config = this.mergeConfig(DEFAULT_CONFIG, userConfig);
-    this.validate();
+  constructor(options = {}) {
+    /** @type {ConfigOptions} */
+    this.config = {
+      ...DEFAULT_CONFIG,
+      ...options,
+    };
+    
+    // Validate configuration
+    ConfigSchema.parse(this.config);
   }
 
   /**
-   * Merge user configuration with default configuration
-   * @param {Object} defaultConfig - Default configuration
-   * @param {Object} userConfig - User configuration
-   * @returns {Object} - Merged configuration
+   * Get a configuration value by path
+   * @param {String} path - Configuration path (e.g. 'ai.provider')
+   * @returns {any} - Configuration value
    */
-  mergeConfig(defaultConfig, userConfig) {
-    const result = { ...defaultConfig };
+  get(path) {
+    /** @type {any} */
+    let current = this.config;
+    const keys = path.split('.');
     
-    for (const key in userConfig) {
-      if (userConfig[key] && typeof userConfig[key] === 'object' && !Array.isArray(userConfig[key])) {
-        result[key] = this.mergeConfig(result[key] || {}, userConfig[key]);
-      } else {
-        result[key] = userConfig[key];
-      }
-    }
-    
-    return result;
-  }
-
-  /**
-   * Validate the configuration
-   * @throws {Error} - If configuration is invalid
-   */
-  validate() {
-    try {
-      ConfigSchema.parse(this.config);
-    } catch (error) {
-      throw new Error(`Invalid configuration: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get a configuration value
-   * @param {string} key - Configuration key (dot notation)
-   * @returns {*} - Configuration value
-   */
-  get(key) {
-    const keys = key.split('.');
-    let value = this.config;
-    
-    for (const k of keys) {
-      if (value === undefined || value === null) {
+    for (const key of keys) {
+      if (current === undefined || current === null) {
         return undefined;
       }
-      value = value[k];
+      current = current[key];
     }
     
-    return value;
+    return current;
   }
 
   /**
-   * Set a configuration value
-   * @param {string} key - Configuration key (dot notation)
-   * @param {*} value - Configuration value
+   * Set a configuration value by path
+   * @param {String} path - Configuration path (e.g. 'ai.provider')
+   * @param {any} value - Configuration value
    */
-  set(key, value) {
-    const keys = key.split('.');
+  set(path, value) {
+    const keys = path.split('.');
+    const lastKey = keys.pop();
+    
+    if (!lastKey) {
+      return;
+    }
+    
+    /** @type {any} */
     let current = this.config;
     
-    for (let i = 0; i < keys.length - 1; i++) {
-      const k = keys[i];
-      if (current[k] === undefined) {
-        current[k] = {};
+    for (const key of keys) {
+      if (!(key in current)) {
+        current[key] = {};
       }
-      current = current[k];
+      current = current[key];
     }
     
-    current[keys[keys.length - 1]] = value;
-    this.validate();
+    current[lastKey] = value;
+    
+    // Validate configuration after update
+    ConfigSchema.parse(this.config);
   }
 
   /**
-   * Get the entire configuration
-   * @returns {Object} - Configuration object
+   * Get the entire configuration object
+   * @returns {ConfigOptions} - Configuration object
    */
   getAll() {
-    return { ...this.config };
+    return this.config;
   }
 } 

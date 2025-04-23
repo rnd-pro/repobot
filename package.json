@@ -9,12 +9,8 @@
   },
   "scripts": {
     "start": "node src/cli/index.js",
-    "typecheck": "tsc --noEmit",
     "test": "node --test tests/",
-    "lint": "eslint src/ tests/",
-    "format": "prettier --write src/ tests/",
-    "prepare": "husky install",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm test"
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai",
@@ -49,26 +45,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
-    "husky": "^9.0.11",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.2.5",
     "typescript": "^5.3.3"
   },
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.md": [
-      "prettier --write"
-    ]
-  }
+  "npmignore": true
 }

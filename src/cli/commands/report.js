@@ -8,8 +8,18 @@ import { existsSync } from 'fs';
 import { Repobot } from '../../index.js';
 
 /**
+ * @typedef {import('../../config/index.js').ConfigOptions} Config
+ */
+
+/**
+ * Valid report template types
+ * @typedef {'daily' | 'weekly' | 'monthly' | 'custom'} ReportTemplate
+ */
+
+/**
  * Generate a report
  * @param {string[]} args - Command arguments
+ * @returns {Promise<void>}
  */
 export async function reportCommand(args) {
   console.log('Generating report...');
@@ -22,17 +32,26 @@ export async function reportCommand(args) {
   }
   
   // Import configuration
+  /** @type {Config} */
   let config;
   try {
     const configModule = await import(configPath);
     config = configModule.default;
-  } catch (error) {
-    console.error('Failed to load configuration:', error.message);
+  } catch (/** @type {unknown} */ error) {
+    console.error('Failed to load configuration:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
   
   // Parse command arguments
-  const [template = 'daily', ...options] = args;
+  /** @type {ReportTemplate} */
+  const template = /** @type {ReportTemplate} */ (args[0] || 'daily');
+  const reportOptions = args.slice(1);
+
+  // Validate template
+  if (!['daily', 'weekly', 'monthly', 'custom'].includes(template)) {
+    console.error('Invalid report template. Must be one of: daily, weekly, monthly, custom');
+    process.exit(1);
+  }
   
   // Initialize Repobot
   const repobot = new Repobot(config);
@@ -42,15 +61,20 @@ export async function reportCommand(args) {
       console.error('Failed to initialize Repobot');
       process.exit(1);
     }
-  } catch (error) {
-    console.error('Error initializing Repobot:', error.message);
+  } catch (/** @type {unknown} */ error) {
+    console.error('Error initializing Repobot:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
   
   // Generate report
   try {
     console.log(`Generating ${template} report...`);
-    const report = await repobot.generateReport(template, { options });
+    const report = await repobot.generateReport(template, {
+      format: reportOptions[0],
+      includeGit: true,
+      includeTodos: true,
+      includeDocumentation: true
+    });
     
     // Print report to console
     console.log('\nReport:');
@@ -59,7 +83,7 @@ export async function reportCommand(args) {
     console.log('----------------------------------------');
     
     // Ask if user wants to send the report
-    if (config.telegram && config.telegram.botToken) {
+    if (config.telegram?.botToken) {
       const readline = await import('readline');
       const rl = readline.createInterface({
         input: process.stdin,
@@ -73,16 +97,16 @@ export async function reportCommand(args) {
           try {
             await repobot.sendReport(report);
             console.log('Report sent successfully');
-          } catch (error) {
-            console.error('Failed to send report:', error.message);
+          } catch (/** @type {unknown} */ error) {
+            console.error('Failed to send report:', error instanceof Error ? error.message : 'Unknown error');
           }
         }
       });
     } else {
       console.log('Telegram not configured. Report not sent.');
     }
-  } catch (error) {
-    console.error('Failed to generate report:', error.message);
+  } catch (/** @type {unknown} */ error) {
+    console.error('Failed to generate report:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
 } 

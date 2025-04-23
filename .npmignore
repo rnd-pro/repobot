@@ -5,8 +5,6 @@
 *.log
 .DS_Store
 Thumbs.db
-.eslintrc.json
-.prettierrc
 tsconfig.json
 setup.sh
 prompts.md

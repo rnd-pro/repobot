@@ -3,11 +3,17 @@
  * @module repobot/filesystem
  */
 
-import { readFile, writeFile, readdir, mkdir } from 'fs/promises';
-import { resolve, join, dirname, relative } from 'path';
+import { readFile as fsReadFile, writeFile as fsWriteFile, mkdir } from 'fs/promises';
+import { resolve, dirname, relative } from 'path';
 import { existsSync } from 'fs';
 import { glob } from 'glob';
 import ignore from 'ignore';
+
+/**
+ * @typedef {import('../index.js').TodoInfo} TodoInfo
+ * @typedef {import('../index.js').DocumentationInfo} DocumentationInfo
+ * @typedef {import('../config/index.js').Config} Config
+ */
 
 /**
  * File System class for Repobot
@@ -15,12 +21,12 @@ import ignore from 'ignore';
 export class FileSystem {
   /**
    * Create a new FileSystem instance
-   * @param {Object} config - Repobot configuration
+   * @param {Config} config - Repobot configuration
    */
   constructor(config) {
     this.config = config;
     this.basePath = process.cwd();
-    this.ignoreFilter = null;
+    /** @type {Array<String>} */
     this.ignoreRules = [];
   }
 
@@ -40,7 +46,11 @@ export class FileSystem {
       
       return true;
     } catch (error) {
-      console.error('Failed to initialize File System module:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to initialize File System module:', error.message);
+      } else {
+        console.error('Failed to initialize File System module:', error);
+      }
       return false;
     }
   }
@@ -51,84 +61,45 @@ export class FileSystem {
    */
   async initIgnoreFilter() {
     try {
-      // Create a new ignore instance
-      this.ignoreFilter = ignore();
-      this.ignoreRules = [];
-      
-      // Check if .gitignore exists in the base path
       const gitignorePath = resolve(this.basePath, '.gitignore');
-      if (existsSync(gitignorePath)) {
-        // Read the .gitignore file
-        const gitignoreContent = await readFile(gitignorePath, 'utf8');
-        
-        // Add the gitignore rules to the filter
-        this.ignoreFilter.add(gitignoreContent);
-        this.ignoreRules.push(...gitignoreContent.split('\n').filter(rule => 
-          rule.trim() && !rule.startsWith('#')
-        ));
-        
-        console.log('Gitignore rules loaded successfully');
-      } else {
-        console.log('No .gitignore file found, proceeding without ignore rules');
-      }
+      const content = await fsReadFile(gitignorePath, 'utf8');
+      this.ignoreRules = content.split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
       
-      // Check for additional ignore files (e.g. .npmignore, .dockerignore)
-      const additionalIgnoreFiles = this.config.get('repository.ignoreFiles') || [];
-      for (const ignoreFile of additionalIgnoreFiles) {
-        const ignoreFilePath = resolve(this.basePath, ignoreFile);
-        if (existsSync(ignoreFilePath)) {
-          try {
-            const ignoreContent = await readFile(ignoreFilePath, 'utf8');
-            this.ignoreFilter.add(ignoreContent);
-            this.ignoreRules.push(...ignoreContent.split('\n').filter(rule => 
-              rule.trim() && !rule.startsWith('#')
-            ));
-            console.log(`Loaded ignore rules from ${ignoreFile}`);
-          } catch (err) {
-            console.warn(`Failed to load ignore rules from ${ignoreFile}:`, err.message);
-          }
-        }
+      console.log('Gitignore rules loaded successfully');
+    } catch (err) {
+      if (err instanceof Error) {
+        console.warn('No .gitignore file found:', err.message);
+      } else {
+        console.warn('No .gitignore file found:', err);
       }
-    } catch (error) {
-      console.error('Failed to initialize gitignore filter:', error.message);
-      // Create a default ignore filter if the gitignore file doesn't exist or can't be read
-      this.ignoreFilter = ignore();
       this.ignoreRules = [];
     }
   }
 
   /**
-   * Find files matching a pattern
-   * @param {string|Array<string>} patterns - Glob patterns
-   * @param {Object} options - Glob options
-   * @returns {Promise<Array<string>>} - Matching file paths
+   * Find files matching multiple patterns
+   * @param {Array<String>} patterns - Array of glob patterns to match
+   * @returns {Promise<Array<String>>} Array of matched file paths
    */
-  async findFiles(patterns, options = {}) {
+  async findFiles(patterns) {
     try {
-      const defaultOptions = {
-        cwd: this.basePath,
-        absolute: true,
-        ignore: this.ignoreRules,
-        ...options
-      };
-      
-      // Find files using glob
-      const files = await glob(patterns, defaultOptions);
-      
-      // If no ignore filter is initialized, return all files
-      if (!this.ignoreFilter) {
-        return files;
+      const matches = new Set();
+      for (const pattern of patterns) {
+        const files = await glob(pattern);
+        for (const file of files) {
+          matches.add(file);
+        }
       }
-      
-      // Filter out files that match gitignore patterns
-      const filteredFiles = files.filter(file => {
-        return !this.isFileIgnored(file);
-      });
-      
-      return filteredFiles;
+      return Array.from(matches);
     } catch (error) {
-      console.error('Failed to find files:', error.message);
-      throw error;
+      if (error instanceof Error) {
+        console.error(`Error finding files: ${error.message}`);
+      } else {
+        console.error('Unknown error finding files');
+      }
+      return [];
     }
   }
 
@@ -138,15 +109,9 @@ export class FileSystem {
    * @returns {boolean} - True if the file is ignored, false otherwise
    */
   isFileIgnored(filePath) {
-    if (!this.ignoreFilter) {
-      return false;
-    }
-    
-    // Convert absolute paths to relative paths for ignore filtering
     const relativePath = this._getRelativePath(filePath);
-    
-    // Return true if the file is ignored
-    return this.ignoreFilter.ignores(relativePath);
+    const ig = ignore().add(this.ignoreRules);
+    return ig.ignores(relativePath);
   }
 
   /**
@@ -182,9 +147,13 @@ export class FileSystem {
         throw new Error(`File is ignored by gitignore rules: ${filePath}`);
       }
       
-      return await readFile(fullPath, 'utf8');
+      return await fsReadFile(fullPath, 'utf8');
     } catch (error) {
-      console.error(`Failed to read file ${filePath}:`, error.message);
+      if (error instanceof Error) {
+        console.error(`Failed to read file ${filePath}:`, error.message);
+      } else {
+        console.error(`Failed to read file ${filePath}:`, error);
+      }
       throw error;
     }
   }
@@ -207,10 +176,14 @@ export class FileSystem {
       // Ensure the directory exists
       await mkdir(dirname(fullPath), { recursive: true });
       
-      await writeFile(fullPath, content, 'utf8');
+      await fsWriteFile(fullPath, content, 'utf8');
       return true;
     } catch (error) {
-      console.error(`Failed to write file ${filePath}:`, error.message);
+      if (error instanceof Error) {
+        console.error(`Failed to write file ${filePath}:`, error.message);
+      } else {
+        console.error(`Failed to write file ${filePath}:`, error);
+      }
       throw error;
     }
   }
@@ -234,23 +207,28 @@ export class FileSystem {
       await mkdir(dirname(fullPath), { recursive: true });
       
       const existingContent = await this.readFile(filePath).catch(() => '');
-      await writeFile(fullPath, existingContent + '\n' + content, 'utf8');
+      await fsWriteFile(fullPath, existingContent + '\n' + content, 'utf8');
       return true;
     } catch (error) {
-      console.error(`Failed to append to file ${filePath}:`, error.message);
+      if (error instanceof Error) {
+        console.error(`Failed to append to file ${filePath}:`, error.message);
+      } else {
+        console.error(`Failed to append to file ${filePath}:`, error);
+      }
       throw error;
     }
   }
 
   /**
    * Get TODO information
-   * @returns {Promise<Object>} - TODO information
+   * @returns {Promise<Record<String, TodoInfo>>} - TODO information by file
    */
   async getTodoInfo() {
     try {
       const todoPatterns = this.config.get('repository.paths.todos') || ['**/TODO.md', '**/TODO'];
       const todoFiles = await this.findFiles(todoPatterns);
       
+      /** @type {Record<String, TodoInfo>} */
       const todoInfo = {};
       for (const file of todoFiles) {
         // Skip ignored files
@@ -265,20 +243,25 @@ export class FileSystem {
       
       return todoInfo;
     } catch (error) {
-      console.error('Failed to get TODO information:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get TODO information:', error.message);
+      } else {
+        console.error('Failed to get TODO information:', error);
+      }
       throw error;
     }
   }
 
   /**
    * Get documentation information
-   * @returns {Promise<Object>} - Documentation information
+   * @returns {Promise<Record<String, DocumentationInfo>>} - Documentation information by file
    */
   async getDocumentationInfo() {
     try {
       const docPatterns = this.config.get('repository.paths.documentation') || ['**/*.md'];
       const docFiles = await this.findFiles(docPatterns);
       
+      /** @type {Record<String, DocumentationInfo>} */
       const docInfo = {};
       for (const file of docFiles) {
         // Skip ignored files
@@ -293,7 +276,11 @@ export class FileSystem {
       
       return docInfo;
     } catch (error) {
-      console.error('Failed to get documentation information:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get documentation information:', error.message);
+      } else {
+        console.error('Failed to get documentation information:', error);
+      }
       throw error;
     }
   }
@@ -301,10 +288,11 @@ export class FileSystem {
   /**
    * Parse a TODO file
    * @param {string} content - File content
-   * @returns {Object} - Parsed TODO information
+   * @returns {TodoInfo} - Parsed TODO information
    */
   parseTodoFile(content) {
     const lines = content.split('\n');
+    /** @type {Array<import('../index.js').TodoTask>} */
     const tasks = [];
     let currentSection = '';
     
@@ -339,11 +327,13 @@ export class FileSystem {
   /**
    * Parse a Markdown file
    * @param {string} content - File content
-   * @returns {Object} - Parsed Markdown information
+   * @returns {DocumentationInfo} - Parsed Markdown information
    */
   parseMarkdownFile(content) {
     const lines = content.split('\n');
+    /** @type {Array<import('../index.js').DocumentationSection>} */
     const sections = [];
+    /** @type {import('../index.js').DocumentationSection} */
     let currentSection = {
       title: '',
       level: 0,
@@ -419,7 +409,11 @@ export class FileSystem {
       await this.writeFile(filePath, updatedLines.join('\n'));
       return true;
     } catch (error) {
-      console.error(`Failed to update TODO status in ${filePath}:`, error.message);
+      if (error instanceof Error) {
+        console.error(`Failed to update TODO status in ${filePath}:`, error.message);
+      } else {
+        console.error(`Failed to update TODO status in ${filePath}:`, error);
+      }
       throw error;
     }
   }

@@ -5,16 +5,22 @@
  * @module repobot/cli
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import { Repobot } from '../index.js';
 import { initCommand } from './commands/init.js';
 import { runCommand } from './commands/run.js';
 import { configCommand } from './commands/config.js';
 import { reportCommand } from './commands/report.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+/**
+ * Get error message safely from unknown error
+ * @param {unknown} error - The caught error
+ * @returns {String} Error message
+ */
+const getErrorMessage = (error) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
 
 /**
  * Main CLI function
@@ -24,26 +30,19 @@ async function main() {
   const command = args[0] || 'help';
 
   try {
-    switch (command) {
-      case 'init':
-        await initCommand(args.slice(1));
-        break;
-      case 'run':
-        await runCommand(args.slice(1));
-        break;
-      case 'config':
-        await configCommand(args.slice(1));
-        break;
-      case 'report':
-        await reportCommand(args.slice(1));
-        break;
-      case 'help':
-      default:
-        showHelp();
-        break;
+    if (command === 'init') {
+      await initCommand();
+    } else if (command === 'run') {
+      await runCommand();
+    } else if (command === 'config') {
+      await configCommand(args.slice(1));
+    } else if (command === 'report') {
+      await reportCommand(args.slice(1));
+    } else {
+      showHelp();
     }
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error:', getErrorMessage(error));
     process.exit(1);
   }
 }
@@ -74,7 +73,7 @@ Examples:
 }
 
 // Run the CLI
-main().catch(error => {
-  console.error('Unhandled error:', error);
+main().catch((error) => {
+  console.error('Unhandled error:', getErrorMessage(error));
   process.exit(1);
 }); 

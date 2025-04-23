@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Prefer native git hooks over the husky usage
+- Disable `package-lock.json` for projects, because it conflicts with modern dependency sharing approach based on `importmaps`, HTTPS imports and CDN code parts delivery for common packages
+- Do not use `eslint`
+- Do not use `prettier`
+- Do not use `jest` for testing
+- Prefer to use native built-in Node.js testing packages

@@ -3,14 +3,10 @@
  * @module repobot/cli/commands/init
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import { writeFile, readFile, access } from 'fs/promises';
+import { resolve } from 'path';
+import { writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { Repobot } from '../../index.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 /**
  * Default configuration template
@@ -40,10 +36,21 @@ const DEFAULT_CONFIG = `export default {
 `;
 
 /**
- * Initialize Repobot in the current repository
- * @param {string[]} args - Command arguments
+ * Get error message safely from unknown error
+ * @param {unknown} error - The caught error
+ * @returns {String} Error message
  */
-export async function initCommand(args) {
+const getErrorMessage = (error) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
+
+/**
+ * Initialize Repobot in the current repository
+ */
+export async function initCommand() {
   console.log('Initializing Repobot...');
   
   // Check if config file already exists
@@ -58,7 +65,7 @@ export async function initCommand(args) {
     await writeFile(configPath, DEFAULT_CONFIG, 'utf8');
     console.log('Created default configuration file: repobot.config.js');
   } catch (error) {
-    console.error('Failed to create configuration file:', error.message);
+    console.error('Failed to create configuration file:', getErrorMessage(error));
     process.exit(1);
   }
   
@@ -96,7 +103,7 @@ export async function initCommand(args) {
       process.exit(1);
     }
   } catch (error) {
-    console.error('Error initializing Repobot:', error.message);
+    console.error('Error initializing Repobot:', getErrorMessage(error));
     process.exit(1);
   }
 } 

@@ -6,18 +6,33 @@
 import { Bot } from 'grammy';
 
 /**
+ * @typedef {Object} Config
+ * @property {Function} get - Function to get configuration values
+ */
+
+/**
+ * @typedef {Object} TelegramContext
+ * @property {Function} reply - Function to reply to messages
+ */
+
+/**
  * Telegram Connector class for Repobot
  */
 export class TelegramConnector {
   /**
    * Create a new TelegramConnector instance
-   * @param {Object} config - Repobot configuration
+   * @param {Config} config - Repobot configuration
    */
   constructor(config) {
+    /** @type {Config} */
     this.config = config;
+    /** @type {String|undefined} */
     this.botToken = this.config.get('telegram.botToken') || process.env.TELEGRAM_BOT_TOKEN;
+    /** @type {String|undefined} */
     this.chatId = this.config.get('telegram.chatId') || process.env.TELEGRAM_CHAT_ID;
+    /** @type {String|undefined} */
     this.groupId = this.config.get('telegram.groupId') || process.env.TELEGRAM_GROUP_ID;
+    /** @type {Bot|null} */
     this.bot = null;
   }
 
@@ -34,8 +49,12 @@ export class TelegramConnector {
     try {
       this.bot = new Bot(this.botToken);
       return true;
-    } catch (error) {
-      console.error('Failed to initialize Telegram connector:', error.message);
+    } catch (/** @type {unknown} */ error) {
+      if (error instanceof Error) {
+        console.error('Failed to initialize Telegram connector:', error.message);
+      } else {
+        console.error('Failed to initialize Telegram connector:', error);
+      }
       return false;
     }
   }
@@ -53,6 +72,10 @@ export class TelegramConnector {
     }
     
     try {
+      if (!this.bot) {
+        throw new Error('Bot is not initialized');
+      }
+
       // Set up command handlers
       this.bot.command('start', this.handleStartCommand.bind(this));
       this.bot.command('help', this.handleHelpCommand.bind(this));
@@ -66,8 +89,12 @@ export class TelegramConnector {
       await this.bot.start();
       console.log('Telegram bot started');
       return true;
-    } catch (error) {
-      console.error('Failed to start Telegram bot:', error.message);
+    } catch (/** @type {unknown} */ error) {
+      if (error instanceof Error) {
+        console.error('Failed to start Telegram bot:', error.message);
+      } else {
+        console.error('Failed to start Telegram bot:', error);
+      }
       return false;
     }
   }
@@ -85,8 +112,12 @@ export class TelegramConnector {
       await this.bot.stop();
       console.log('Telegram bot stopped');
       return true;
-    } catch (error) {
-      console.error('Failed to stop Telegram bot:', error.message);
+    } catch (/** @type {unknown} */ error) {
+      if (error instanceof Error) {
+        console.error('Failed to stop Telegram bot:', error.message);
+      } else {
+        console.error('Failed to stop Telegram bot:', error);
+      }
       return false;
     }
   }
@@ -105,6 +136,10 @@ export class TelegramConnector {
     }
     
     try {
+      if (!this.bot) {
+        throw new Error('Bot is not initialized');
+      }
+
       // Determine the chat ID to use
       const chatId = this.groupId || this.chatId;
       
@@ -115,15 +150,19 @@ export class TelegramConnector {
       // Send the message
       await this.bot.api.sendMessage(chatId, message, { parse_mode: 'Markdown' });
       return true;
-    } catch (error) {
-      console.error('Failed to send Telegram message:', error.message);
+    } catch (/** @type {unknown} */ error) {
+      if (error instanceof Error) {
+        console.error('Failed to send Telegram message:', error.message);
+      } else {
+        console.error('Failed to send Telegram message:', error);
+      }
       return false;
     }
   }
 
   /**
    * Handle the /start command
-   * @param {Object} ctx - Telegram context
+   * @param {TelegramContext} ctx - Telegram context
    */
   async handleStartCommand(ctx) {
     await ctx.reply(
@@ -134,7 +173,7 @@ export class TelegramConnector {
 
   /**
    * Handle the /help command
-   * @param {Object} ctx - Telegram context
+   * @param {TelegramContext} ctx - Telegram context
    */
   async handleHelpCommand(ctx) {
     await ctx.reply(
@@ -149,7 +188,7 @@ export class TelegramConnector {
 
   /**
    * Handle the /status command
-   * @param {Object} ctx - Telegram context
+   * @param {TelegramContext} ctx - Telegram context
    */
   async handleStatusCommand(ctx) {
     // This would be implemented to get repository status
@@ -158,7 +197,7 @@ export class TelegramConnector {
 
   /**
    * Handle the /report command
-   * @param {Object} ctx - Telegram context
+   * @param {TelegramContext} ctx - Telegram context
    */
   async handleReportCommand(ctx) {
     // This would be implemented to generate reports
@@ -167,7 +206,7 @@ export class TelegramConnector {
 
   /**
    * Handle incoming messages
-   * @param {Object} ctx - Telegram context
+   * @param {TelegramContext} ctx - Telegram context
    */
   async handleMessage(ctx) {
     // This would be implemented to process user queries

@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Always use modern JavaScript
+  - Avoid to use `require`, always use modern ESM imports instead
+  - Use modern Node.js APIs (`fetch`, HTTPS module imports, top level await, etc)
+  - Use moderm browser APIs and specs, such as:
+    - Custom Elements
+    - importmaps
+
+- Use following code style settings:
+  - Single quotes
+  - Use semicolons
+  - Avoid to use switch/case statements
+  - New lines for key/value pairs in objects
+  - New lines for array items
+
+- Avoid to leave unused imports 
+- Avoid to leave unused entity defenitions

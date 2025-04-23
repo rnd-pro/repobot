@@ -6,16 +6,23 @@
 import { AIConnector } from '../ai/index.js';
 
 /**
+ * @typedef {import('../ai/index.js').RepobotContext} RepobotContext
+ */
+
+/**
  * Report Generator class for Repobot
  */
 export class ReportGenerator {
   /**
    * Create a new ReportGenerator instance
-   * @param {Object} config - Repobot configuration
+   * @param {Repobot.RepobotConfig} config - Repobot configuration
    */
   constructor(config) {
+    /** @type {Repobot.RepobotConfig} */
     this.config = config;
+    /** @type {AIConnector} */
     this.ai = new AIConnector(config);
+    /** @type {Repobot.ReportTemplates} */
     this.templates = {
       daily: this.generateDailyReport.bind(this),
       weekly: this.generateWeeklyReport.bind(this),
@@ -26,9 +33,9 @@ export class ReportGenerator {
 
   /**
    * Generate a report
-   * @param {string} template - Report template
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
+   * @param {Repobot.ReportTemplate} template - Report template
+   * @param {RepobotContext} context - Context information
+   * @param {Repobot.ReportOptions} [options={}] - Report options
    * @returns {Promise<string>} - Generated report
    */
   async generate(template, context, options = {}) {
@@ -43,69 +50,74 @@ export class ReportGenerator {
       
       return report;
     } catch (error) {
-      console.error('Failed to generate report:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to generate report:', error.message);
+      }
       throw error;
     }
   }
 
   /**
    * Generate a daily report
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
+   * @param {RepobotContext} context - Context information
    * @returns {Promise<string>} - Generated report
    */
-  async generateDailyReport(context, options = {}) {
+  async generateDailyReport(context) {
     try {
       // Use AI to generate the report
-      const report = await this.ai.generateReport('daily', context, options);
+      const report = await this.ai.generateReport('daily', context);
       
       return report;
     } catch (error) {
-      console.error('Failed to generate daily report:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to generate daily report:', error.message);
+      }
       throw error;
     }
   }
 
   /**
    * Generate a weekly report
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
+   * @param {RepobotContext} context - Context information
    * @returns {Promise<string>} - Generated report
    */
-  async generateWeeklyReport(context, options = {}) {
+  async generateWeeklyReport(context) {
     try {
       // Use AI to generate the report
-      const report = await this.ai.generateReport('weekly', context, options);
+      const report = await this.ai.generateReport('weekly', context);
       
       return report;
     } catch (error) {
-      console.error('Failed to generate weekly report:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to generate weekly report:', error.message);
+      }
       throw error;
     }
   }
 
   /**
    * Generate a monthly report
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
+   * @param {RepobotContext} context - Context information
    * @returns {Promise<string>} - Generated report
    */
-  async generateMonthlyReport(context, options = {}) {
+  async generateMonthlyReport(context) {
     try {
       // Use AI to generate the report
-      const report = await this.ai.generateReport('monthly', context, options);
+      const report = await this.ai.generateReport('monthly', context);
       
       return report;
     } catch (error) {
-      console.error('Failed to generate monthly report:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to generate monthly report:', error.message);
+      }
       throw error;
     }
   }
 
   /**
    * Generate a custom report
-   * @param {Object} context - Context information
-   * @param {Object} options - Report options
+   * @param {RepobotContext} context - Context information
+   * @param {Repobot.ReportOptions} options - Report options
    * @returns {Promise<string>} - Generated report
    */
   async generateCustomReport(context, options = {}) {
@@ -116,11 +128,13 @@ export class ReportGenerator {
       }
       
       // Use AI to generate the report
-      const report = await this.ai.generateReport(options.template, context, options);
+      const report = await this.ai.generateReport(options.template, context);
       
       return report;
     } catch (error) {
-      console.error('Failed to generate custom report:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to generate custom report:', error.message);
+      }
       throw error;
     }
   }
@@ -128,7 +142,7 @@ export class ReportGenerator {
   /**
    * Register a custom report template
    * @param {string} name - Template name
-   * @param {Function} generator - Template generator function
+   * @param {Repobot.ReportGenerator} generator - Template generator function
    */
   registerTemplate(name, generator) {
     if (this.templates[name]) {

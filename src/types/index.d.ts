@@ -1,11 +1,24 @@
 /**
- * TypeScript declarations for Repobot
+ * Type declarations for the repobot module
  */
 
 declare module 'repobot' {
+  export type ReportTemplate = 'daily' | 'weekly' | 'monthly' | 'custom';
+
+  export interface ReportOptions {
+    format?: String;
+    includeGit?: Boolean;
+    includeTodos?: Boolean;
+    includeDocumentation?: Boolean;
+    customFields?: Object<string, String>;
+  }
+
+  /**
+   * Repository configuration
+   */
   export interface Config {
     ai?: {
-      provider: 'openai';
+      provider: string;
       apiKey?: string;
       model?: string;
     };
@@ -18,7 +31,69 @@ declare module 'repobot' {
       schedule?: string;
       template?: string;
     };
-    repositoryPath?: string;
+    repository?: {
+      paths?: {
+        todos?: string[];
+        documentation?: string[];
+      };
+      ignoreFiles?: string[];
+    };
+  }
+
+  /**
+   * Todo item information
+   */
+  export interface TodoItem {
+    description: string;
+    completed: boolean;
+    section: string;
+  }
+
+  /**
+   * Todo information
+   */
+  export interface TodoInfo {
+    tasks: TodoItem[];
+    sections: string[];
+  }
+
+  /**
+   * Documentation section
+   */
+  export interface DocumentationSection {
+    title: string;
+    level: number;
+    content: string[];
+  }
+
+  /**
+   * Documentation information
+   */
+  export interface DocumentationInfo {
+    sections: DocumentationSection[];
+    title: string;
+    content: string;
+  }
+
+  /**
+   * Main Repobot class
+   */
+  export class Repobot {
+    constructor(config?: Config);
+    init(): Promise<boolean>;
+    run(): Promise<void>;
+    stop(): Promise<void>;
+    generateReport(template?: ReportTemplate, options?: ReportOptions): Promise<string>;
+  }
+
+  /**
+   * Configuration manager
+   */
+  export class Config {
+    constructor(config?: Config);
+    get(key: string): any;
+    set(key: string, value: any): void;
+    getAll(): Config;
   }
 
   export interface GitInfo {
@@ -40,36 +115,6 @@ declare module 'repobot' {
     }>;
     branches: string[];
     tags: string[];
-  }
-
-  export interface TodoInfo {
-    file: string;
-    tasks: Array<{
-      description: string;
-      completed: boolean;
-    }>;
-  }
-
-  export interface DocumentationInfo {
-    file: string;
-    sections: Array<{
-      title: string;
-      content: string;
-    }>;
-  }
-
-  export class Repobot {
-    constructor(config?: Config);
-    init(): Promise<boolean>;
-    run(): Promise<void>;
-    stop(): Promise<void>;
-  }
-
-  export class Config {
-    constructor(config?: Config);
-    get(key: string): any;
-    set(key: string, value: any): void;
-    getAll(): Config;
   }
 
   export class GitConnector {
@@ -108,4 +153,28 @@ declare module 'repobot' {
     stop(): Promise<void>;
     sendMessage(message: string): Promise<boolean>;
   }
-} 
+}
+
+declare global {
+  namespace Repobot {
+    interface User {
+      id: String;
+      name: String;
+      age: Number;
+      isActive: Boolean;
+    }
+
+    interface ProjectConfig {
+      name: String;
+      version: String;
+      dependencies: Array<String>;
+      settings: {
+        private: String;
+        type: String;
+      };
+    }
+  }
+}
+
+// This empty export is needed to make this a module
+export {}; 

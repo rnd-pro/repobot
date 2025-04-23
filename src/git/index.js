@@ -7,6 +7,13 @@ import { simpleGit } from 'simple-git';
 import { resolve } from 'path';
 
 /**
+ * @typedef {import('../index.js').GitInfo} GitInfo
+ * @typedef {import('../index.js').GitCommit} GitCommit
+ * @typedef {import('../index.js').GitBranches} GitBranches
+ * @typedef {import('../index.js').GitRemote} GitRemote
+ */
+
+/**
  * Git connector class for Repobot
  */
 export class GitConnector {
@@ -16,6 +23,7 @@ export class GitConnector {
    */
   constructor(config) {
     this.config = config;
+    /** @type {import('simple-git').SimpleGit | null} */
     this.git = null;
     this.repoPath = process.cwd();
   }
@@ -36,14 +44,18 @@ export class GitConnector {
       
       return true;
     } catch (error) {
-      console.error('Failed to initialize Git connector:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to initialize Git connector:', error.message);
+      } else {
+        console.error('Failed to initialize Git connector:', String(error));
+      }
       return false;
     }
   }
 
   /**
    * Get repository information
-   * @returns {Promise<Object>} - Repository information
+   * @returns {Promise<GitInfo>} - Repository information
    */
   async getRepositoryInfo() {
     if (!this.git) {
@@ -65,20 +77,39 @@ export class GitConnector {
         this.git.tags()
       ]);
       
-      return {
-        currentBranch: status.current,
+      /** @type {GitInfo} */
+      const info = {
+        currentBranch: status.current || 'HEAD',
         isClean: status.isClean(),
         modifiedFiles: status.modified,
         stagedFiles: status.staged,
         untrackedFiles: status.not_added,
-        recentCommits: log.all,
-        remotes: remotes,
-        branches: branches,
+        recentCommits: log.all.map(commit => ({
+          hash: commit.hash,
+          message: commit.message,
+          author: commit.author_name,
+          date: commit.date
+        })),
+        remotes: remotes.map(remote => ({
+          name: remote.name,
+          refs: remote.refs.fetch
+        })),
+        branches: {
+          current: branches.current,
+          all: branches.all,
+          remotes: branches.all.filter(b => b.startsWith('remotes/'))
+        },
         tags: tags.all,
         path: this.repoPath
       };
+      
+      return info;
     } catch (error) {
-      console.error('Failed to get repository information:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get repository information:', error.message);
+      } else {
+        console.error('Failed to get repository information:', String(error));
+      }
       throw error;
     }
   }
@@ -86,7 +117,7 @@ export class GitConnector {
   /**
    * Get commit history
    * @param {Object} options - Options for log
-   * @returns {Promise<Array>} - Commit history
+   * @returns {Promise<Array<GitCommit>>} - Commit history
    */
   async getCommitHistory(options = {}) {
     if (!this.git) {
@@ -100,9 +131,18 @@ export class GitConnector {
       };
       
       const log = await this.git.log(defaultOptions);
-      return log.all;
+      return log.all.map(commit => ({
+        hash: commit.hash,
+        message: commit.message,
+        author: commit.author_name,
+        date: commit.date
+      }));
     } catch (error) {
-      console.error('Failed to get commit history:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get commit history:', error.message);
+      } else {
+        console.error('Failed to get commit history:', String(error));
+      }
       throw error;
     }
   }
@@ -127,7 +167,11 @@ export class GitConnector {
         return await this.git.diff();
       }
     } catch (error) {
-      console.error('Failed to get diff:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get diff:', error.message);
+      } else {
+        console.error('Failed to get diff:', String(error));
+      }
       throw error;
     }
   }
@@ -151,14 +195,18 @@ export class GitConnector {
         return await this.git.catFile(['-p', fullPath]);
       }
     } catch (error) {
-      console.error(`Failed to get file content for ${filePath}:`, error.message);
+      if (error instanceof Error) {
+        console.error(`Failed to get file content for ${filePath}:`, error.message);
+      } else {
+        console.error(`Failed to get file content for ${filePath}:`, String(error));
+      }
       throw error;
     }
   }
 
   /**
    * Get branch information
-   * @returns {Promise<Object>} - Branch information
+   * @returns {Promise<GitBranches>} - Branch information
    */
   async getBranches() {
     if (!this.git) {
@@ -170,10 +218,14 @@ export class GitConnector {
       return {
         current: branches.current,
         all: branches.all,
-        remote: branches.remotes
+        remotes: branches.all.filter(b => b.startsWith('remotes/'))
       };
     } catch (error) {
-      console.error('Failed to get branch information:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get branch information:', error.message);
+      } else {
+        console.error('Failed to get branch information:', String(error));
+      }
       throw error;
     }
   }
@@ -201,7 +253,11 @@ export class GitConnector {
         ignored: status.ignored
       };
     } catch (error) {
-      console.error('Failed to get status information:', error.message);
+      if (error instanceof Error) {
+        console.error('Failed to get status information:', error.message);
+      } else {
+        console.error('Failed to get status information:', String(error));
+      }
       throw error;
     }
   }

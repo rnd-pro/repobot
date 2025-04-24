@@ -34,6 +34,37 @@ npx @rnd-pro/repobot init
 npx @rnd-pro/repobot run
 ```
 
+## CLI Usage
+
+After installation, the `repobot` command becomes available in your terminal:
+
+```bash
+# Show all available commands and options
+repobot --help
+
+# Initialize a new configuration file
+repobot init
+
+# Generate reports
+repobot report daily    # Generate daily report
+repobot report weekly   # Generate weekly report
+repobot report monthly  # Generate monthly report
+
+# Monitor repository and generate reports automatically
+repobot watch
+
+# Manage tasks
+repobot tasks list            # List all tasks
+repobot tasks complete <id>   # Mark task as completed
+
+# Send reports via Telegram
+repobot send daily    # Send daily report
+repobot send weekly   # Send weekly report
+
+# Show repository insights
+repobot insights
+```
+
 ## Configuration
 
 Repobot can be configured through a `repobot.config.js` file in your project root:

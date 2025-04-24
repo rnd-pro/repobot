@@ -1,6 +1,6 @@
 {
   "name": "@rnd-pro/repobot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI assistant for managing development processes in Git repositories",
   "type": "module",
   "main": "src/index.js",
